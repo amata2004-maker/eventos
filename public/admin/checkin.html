@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Check-in QR</title>
+<link rel="stylesheet" href="/assets/public.css">
+<link rel="stylesheet" href="/assets/admin.css">
+</head>
+<body>
+<header class="top"><div class="wrap bar"><a href="/admin/" class="home">← Panel</a><span id="count"></span></div></header>
+<main class="wrap">
+  <h1 id="title" class="center">Check-in</h1>
+  <div class="scan"><video id="video" playsinline muted></video><div class="frame"></div></div>
+  <div id="result" class="result" hidden></div>
+  <p class="center"><button id="start" class="btn">Activar cámara</button></p>
+  <form id="manual" class="form" style="max-width:420px;margin:0 auto">
+    <label>¿No lee el QR? Pega el enlace o código del boleto<input name="token" autocomplete="off"></label>
+    <button class="btn ghost sm">Validar</button>
+  </form>
+  <p class="center small muted">Para buscar por nombre usa la lista de registrados del panel.</p>
+</main>
+<script src="/assets/checkin.js" defer></script>
+</body>
+</html>

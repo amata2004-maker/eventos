@@ -1,0 +1,6 @@
+User-agent: *
+Disallow: /admin/
+Disallow: /t/
+Disallow: /j/
+Disallow: /ics/
+Disallow: /api/

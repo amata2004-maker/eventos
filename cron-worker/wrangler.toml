@@ -1,0 +1,12 @@
+name = "eventos-cron"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+[triggers]
+crons = ["*/10 * * * *"]
+
+[vars]
+# URL pública de la app de Pages (sin / final)
+APP_URL = "https://eventos.pages.dev"
+
+# Secret (no va aquí):  npx wrangler secret put CRON_SECRET   — el mismo valor que en Pages

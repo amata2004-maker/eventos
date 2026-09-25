@@ -1,0 +1,6 @@
+# Copia a .dev.vars para desarrollo local (nunca subir .dev.vars)
+RESEND_API_KEY=re_xxx
+MAIL_FROM=eventos@myactif.com
+CRON_SECRET=cambia-esto
+SIGNUP_CODE=cambia-esto
+IP_SALT=cambia-esto
