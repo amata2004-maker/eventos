@@ -4,10 +4,11 @@ App multimarca (MyActif / Negocio Amway) de eventos presenciales y en línea. Ve
 
 ## Stack e infraestructura
 
+- Producción: **https://eventos.myactif.net** (dominio propio; `eventos-9ni.pages.dev` sigue activo como alias). Panel en `/admin/`.
 - Cloudflare Pages: output directory **`public`** (no la raíz — así `schema.sql` y `cron-worker/` no se sirven). Functions en `/functions/`.
 - D1 `eventos_db` (id `5481cd74-9368-456b-82db-33685df87193`, región WNAM) con binding **`DB`**. Esquema en `schema.sql` (ya aplicado el 25-sep-2026). Fechas en ISO UTC (`toISOString()`), comparadas como texto — no mezclar otros formatos.
-- Resend para correo. Remitente por marca: `MAIL_FROM_<MARCA>` o `MAIL_FROM`.
-- Pages no tiene cron: `cron-worker/` es un Worker aparte que llama `/api/cron/reminders` cada 10 min con `X-Cron-Key`.
+- Resend para correo. Remitente por marca: `MAIL_FROM_<MARCA>` o `MAIL_FROM` (hoy `eventos@myactif.net`, dominio verificado).
+- Pages no tiene cron: el Worker `eventos-cron` llama `/api/cron/reminders` cada 10 min con `X-Cron-Key`. Se creó desde el panel de Cloudflare (código = `cron-worker/src/index.js`); sus variables `APP_URL` y `CRON_SECRET` viven en el panel. Los enlaces de los recordatorios salen de `APP_URL`.
 - **Pedir confirmación a Alex antes de cada deploy** (push a `main` una vez conectado a Pages, `wrangler deploy` del cron, cambios remotos en D1).
 
 ## Reglas (no romper)
