@@ -47,3 +47,8 @@ fieldset{border:0;padding:0;margin:0}
 .cover-field img{display:block;width:100%;max-height:220px;object-fit:cover;border-radius:12px;margin-bottom:8px;border:1px solid var(--line)}
 .cover-field input[type=text]{margin-top:8px}
 .upl{cursor:pointer}
+@media (prefers-color-scheme:dark){
+  .copy{background:#22302d;color:var(--ink)}
+  .seg label:has(input:checked){background:#22302d;border-color:var(--accent)}
+  .pill{background:#22302d;color:var(--ink)}
+}
