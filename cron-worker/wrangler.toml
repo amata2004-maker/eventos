@@ -7,6 +7,6 @@ crons = ["*/10 * * * *"]
 
 [vars]
 # URL pública de la app de Pages (sin / final)
-APP_URL = "https://eventos.pages.dev"
+APP_URL = "https://eventos-9ni.pages.dev"
 
 # Secret (no va aquí):  npx wrangler secret put CRON_SECRET   — el mismo valor que en Pages
