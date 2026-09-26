@@ -268,6 +268,38 @@
     f.cover_url.oninput = () => { const v = f.cover_url.value.trim(); prev.hidden = !v; del.hidden = !v; if (v) prev.src = v; };
   }
 
+  // ─── WhatsApp (envío manual con wa.me) ─────────────────
+  // Número internacional sin "+": 10 dígitos → México (52). Con lada ya incluida se respeta.
+  function waNumber(phone) {
+    let d = String(phone || "").replace(/\D/g, "");
+    if (d.startsWith("00")) d = d.slice(2);
+    if (d.length === 10) return `52${d}`;
+    return d.length >= 11 && d.length <= 15 ? d : "";
+  }
+
+  function waWhen(ev) {
+    const day = new Intl.DateTimeFormat("es-MX", { timeZone: ev.timezone, weekday: "long", day: "numeric", month: "long" }).format(new Date(ev.start_at));
+    const time = new Intl.DateTimeFormat("es-MX", { timeZone: ev.timezone, hour: "numeric", minute: "2-digit" }).format(new Date(ev.start_at));
+    return `el ${day.replace(",", "")} a las ${time}`;
+  }
+
+  function waDefaultTemplate(ev) {
+    return ev.mode === "online"
+      ? "Hola {nombre} 👋\nTe recuerdo que {cuando} es *{evento}* 💻 en línea.\n\nEl enlace para entrar te llegó a tu correo (revisa también spam).\nInfo del evento: {enlace}\n\n¡Te esperamos!"
+      : "Hola {nombre} 👋\nTe recuerdo que {cuando} es *{evento}*.\n📍 {lugar}\n\nTu pase con código QR te llegó a tu correo (revisa también spam); muéstralo en la entrada.\nInfo del evento: {enlace}\n\n¡Te esperamos!";
+  }
+
+  function waMessage(tpl, ev, r) {
+    const vars = {
+      nombre: r.name.split(" ")[0],
+      evento: ev.title,
+      cuando: waWhen(ev),
+      lugar: [ev.venue_name, ev.address].filter(Boolean).join(", ") || "En línea",
+      enlace: publicUrl(ev),
+    };
+    return tpl.replace(/\{(nombre|evento|cuando|lugar|enlace)\}/g, (_, k) => vars[k]);
+  }
+
   // ─── Detalle / registrados ──────────────────────────────
   async function viewEvent(id) {
     const [{ event: ev }, { registrations: regs }] = await Promise.all([api(`/api/events/${id}`), api(`/api/events/${id}/registrations`)]);
@@ -287,16 +319,31 @@
   </div>
 </section>
 <section class="card">
+  <details class="wa-box">
+    <summary>💬 Mensaje de WhatsApp <span class="muted small">(se usa en el botón de cada invitado)</span></summary>
+    <textarea id="wa-tpl" rows="9"></textarea>
+    <p class="small muted">Puedes usar {nombre}, {evento}, {cuando}, {lugar} y {enlace}. Se guarda en este navegador.
+      <button type="button" class="link small" id="wa-reset">Restaurar mensaje original</button></p>
+  </details>
   <input class="search" id="q" placeholder="Buscar por nombre o correo…">
   <div class="tablewrap"><table class="table"><thead><tr><th>Nombre</th><th>Contacto</th><th>Registro</th><th>${presencial ? "Check-in" : "Se unió"}</th></tr></thead><tbody id="rows"></tbody></table></div>
 </section>`;
     const tbody = document.getElementById("rows");
+    // WhatsApp: mensaje editable (por evento, en localStorage) y marca local de "enviado".
+    const tplKey = `ev_wa_tpl_${ev.id}`, sentKey = `ev_wa_sent_${ev.id}`;
+    const tplBox = document.getElementById("wa-tpl");
+    const ls = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+    tplBox.value = ls.get(tplKey) || waDefaultTemplate(ev);
+    tplBox.oninput = () => ls.set(tplKey, tplBox.value);
+    document.getElementById("wa-reset").onclick = () => { tplBox.value = waDefaultTemplate(ev); ls.set(tplKey, tplBox.value); };
+    const waSent = new Set(JSON.parse(ls.get(sentKey) || "[]"));
     const render = (q = "") => {
       const ql = q.toLowerCase();
       const list = regs.filter((r) => !ql || r.name.toLowerCase().includes(ql) || r.email.includes(ql));
       tbody.innerHTML = list.map((r) => `<tr>
   <td>${esc(r.name)}</td>
-  <td>${esc(r.email)}${r.phone ? `<br><span class="muted">${esc(r.phone)}</span>` : ""}</td>
+  <td>${esc(r.email)}${r.phone ? `<br><span class="muted">${esc(r.phone)}</span>` : ""}
+    ${waNumber(r.phone) ? `<br><button class="btn sm wa ${waSent.has(r.id) ? "sent" : ""}" data-wa="${r.id}">${waSent.has(r.id) ? "✓ WhatsApp enviado" : "💬 WhatsApp"}</button>` : ""}</td>
   <td class="muted">${esc(fmtShort(r.created_at))}</td>
   <td>${presencial
     ? (r.checked_in_at ? `<span class="ok-txt">✓ ${esc(fmtShort(r.checked_in_at))}</span> <button class="link small" data-undo="${r.id}">deshacer</button>` : `<button class="btn sm" data-in="${r.id}">Check-in</button>`)
@@ -306,6 +353,15 @@
     render();
     document.getElementById("q").oninput = (e) => render(e.target.value);
     tbody.onclick = async (e) => {
+      const idWa = e.target.dataset.wa;
+      if (idWa) {
+        const r = regs.find((x) => x.id === idWa);
+        window.open(`https://wa.me/${waNumber(r.phone)}?text=${encodeURIComponent(waMessage(tplBox.value, ev, r))}`, "_blank", "noopener");
+        waSent.add(r.id);
+        ls.set(sentKey, JSON.stringify([...waSent]));
+        render(document.getElementById("q").value);
+        return;
+      }
       const idIn = e.target.dataset.in, idUndo = e.target.dataset.undo;
       if (!idIn && !idUndo) return;
       e.target.disabled = true;

@@ -24,7 +24,7 @@ export async function onRequestGet({ request, env, params }) {
   <h2>Reserva tu lugar</h2>
   <label>Nombre completo<input name="name" required maxlength="100" autocomplete="name"></label>
   <label>Correo electrónico<input name="email" type="email" required maxlength="254" autocomplete="email"></label>
-  <label>WhatsApp <span class="muted">(opcional)</span><input name="phone" type="tel" maxlength="30" autocomplete="tel"></label>
+  <label>WhatsApp <span class="muted">(opcional, 10 dígitos)</span><input name="phone" type="tel" inputmode="tel" maxlength="30" autocomplete="tel" placeholder="998 123 4567"></label>
   <input name="website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
   <button type="submit" class="btn">Registrarme gratis</button>
   <p class="muted small">Te enviaremos tu ${ev.mode === "online" ? "enlace de acceso" : "pase con código QR"} y la invitación para tu calendario.</p>

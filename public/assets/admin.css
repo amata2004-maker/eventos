@@ -52,3 +52,8 @@ fieldset{border:0;padding:0;margin:0}
   .seg label:has(input:checked){background:#22302d;border-color:var(--accent)}
   .pill{background:#22302d;color:var(--ink)}
 }
+.wa-box{margin-bottom:12px;border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+.wa-box summary{cursor:pointer;font-weight:700}
+.wa-box textarea{display:block;width:100%;margin-top:10px;padding:10px 12px;font:inherit;font-size:14px;border:1.5px solid var(--line);border-radius:10px;background:var(--card);color:inherit;resize:vertical}
+.btn.wa{background:#25D366;color:#0b2e1a;margin-top:6px}
+.btn.wa.sent{background:transparent;color:#1a8f4a;border:1.5px solid #25D366}
