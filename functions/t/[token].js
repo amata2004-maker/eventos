@@ -9,7 +9,7 @@ import { page } from "../_lib/page.js";
 
 export async function onRequestGet({ request, env, params }) {
   const row = await env.DB.prepare(
-    `SELECT r.token, r.name, r.checked_in_at, e.* FROM registrations r JOIN events e ON e.id = r.event_id WHERE r.token = ?`
+    `SELECT r.token, r.name, r.email AS reg_email, r.phone AS reg_phone, r.checked_in_at, e.* FROM registrations r JOIN events e ON e.id = r.event_id WHERE r.token = ?`
   ).bind(params.token).first();
   if (!row) {
     return page({ brand: getBrand(), title: "Boleto no encontrado", status: 404,
@@ -25,6 +25,7 @@ export async function onRequestGet({ request, env, params }) {
       ? `<a class="btn big" href="/j/${escapeHtml(row.token)}">Unirme a la sesión</a>
          ${row.meeting_info ? `<p class="muted center">${richText(row.meeting_info)}</p>` : ""}`
       : `<div class="qr">${qrSvg(ticketUrl)}</div>
+         <p class="center"><strong>${escapeHtml(row.name)}</strong></p>
          <p class="center muted">${row.checked_in_at ? "✅ Check-in registrado" : "Muestra este código en la entrada"}</p>`;
 
   const where = row.mode === "online" ? "💻 En línea"
@@ -34,7 +35,11 @@ export async function onRequestGet({ request, env, params }) {
 <section class="card ticket">
   <span class="badge">Tu boleto</span>
   <h1>${escapeHtml(row.title)}</h1>
-  <p><strong>${escapeHtml(row.name)}</strong></p>
+  <div class="guest">
+    <div class="muted small">Registro a nombre de</div>
+    <strong>${escapeHtml(row.name)}</strong>
+    <div class="muted small">${escapeHtml(row.reg_email)}${row.reg_phone ? ` · ${escapeHtml(row.reg_phone)}` : ""}</div>
+  </div>
   <p>🗓️ ${escapeHtml(fmtDate(row.start_at, row.timezone))}<br>
      <span class="muted">${escapeHtml(fmtTime(row.start_at, row.timezone))} – ${escapeHtml(fmtTime(row.end_at, row.timezone))} · hora de ${escapeHtml(tzLabel(row.start_at, row.timezone))}</span></p>
   <p>${where}</p>

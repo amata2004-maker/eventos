@@ -62,11 +62,21 @@ function onlineBlock(ev, l, brand) {
 ${ev.meeting_info ? `<p style="text-align:center;color:#555;font-size:13px;margin:0;">${richText(ev.meeting_info)}</p>` : ""}`;
 }
 
-function qrBlock(ev, l) {
+function guestBlock(reg) {
+  const rows = [["Nombre", reg.name], ["Correo", reg.email], ["WhatsApp", reg.phone]].filter(([, v]) => v);
+  return `<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border:1px solid #e3e5e8;border-radius:12px;margin:0 0 8px;">
+  <tr><td colspan="2" style="padding:12px 16px 4px;font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.4px;">Registro a nombre de</td></tr>
+  ${rows.map(([k, v]) => `<tr><td style="padding:4px 16px;color:#666;font-size:14px;width:90px;">${k}</td><td style="padding:4px 16px 4px 0;font-size:14px;font-weight:700;">${escapeHtml(v)}</td></tr>`).join("")}
+  <tr><td colspan="2" style="height:8px;"></td></tr>
+</table>`;
+}
+
+function qrBlock(ev, l, reg) {
   if (ev.mode !== "presencial") return "";
   return `<p style="text-align:center;margin:18px 0 6px;font-weight:700;">Tu pase de entrada</p>
 ${qrEmailTable(l.ticketUrl)}
-<p style="text-align:center;color:#666;font-size:13px;margin:8px 0 0;">Muéstralo en la entrada para tu check-in.</p>`;
+<p style="text-align:center;font-weight:700;margin:8px 0 0;">${escapeHtml(reg.name)}</p>
+<p style="text-align:center;color:#666;font-size:13px;margin:2px 0 0;">Muéstralo en la entrada para tu check-in.</p>`;
 }
 
 export function confirmationEmail(env, ev, reg, org, origin) {
@@ -78,7 +88,8 @@ export function confirmationEmail(env, ev, reg, org, origin) {
 <p style="margin:0 0 6px;">Hola ${first},</p>
 <p style="margin:0;">¡Tu lugar está confirmado! 🎉</p>
 ${eventBlock(ev, brand)}
-${qrBlock(ev, l)}
+${guestBlock(reg)}
+${qrBlock(ev, l, reg)}
 ${onlineBlock(ev, l, brand)}
 <p style="text-align:center;margin:20px 0 0;">
   ${button(l.ticketUrl, "Ver mi boleto", brand.dark)}

@@ -44,3 +44,4 @@ a{color:var(--brand)}
   a{color:var(--accent)}
   .notice{background:#22302d;color:var(--ink)}
 }
+.guest{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:12px 0}
