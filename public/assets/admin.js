@@ -33,6 +33,22 @@
 
   const fmt = (iso, tz) => new Intl.DateTimeFormat("es-MX", { timeZone: tz, weekday: "short", day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(iso));
   const fmtShort = (iso) => iso ? new Intl.DateTimeFormat("es-MX", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }).format(new Date(iso)) : "";
+  // Lista de horas cada 15 min ("7:00 p.m."). Evita <input type="datetime-local">,
+  // que en Chrome con reloj de 12 h exige llenar a.m./p.m. o manda la fecha vacía.
+  function timeOptions(selected, optional = false) {
+    let html = optional ? `<option value="">2 h después</option>` : "";
+    for (let m = 0; m < 24 * 60; m += 15) {
+      const hh = String(Math.floor(m / 60)).padStart(2, "0"), mm = String(m % 60).padStart(2, "0");
+      const v = `${hh}:${mm}`;
+      const h12 = ((Math.floor(m / 60) + 11) % 12) + 1;
+      html += `<option value="${v}" ${v === selected ? "selected" : ""}>${h12}:${mm} ${m < 720 ? "a.m." : "p.m."}</option>`;
+    }
+    if (selected && !/:(00|15|30|45)$/.test(selected)) {
+      const [h, mi] = selected.split(":").map(Number);
+      html += `<option value="${selected}" selected>${((h + 11) % 12) + 1}:${String(mi).padStart(2, "0")} ${h < 12 ? "a.m." : "p.m."}</option>`;
+    }
+    return html;
+  }
   const publicUrl = (ev) => `${location.origin}/e/${ev.slug}`;
   const brandName = (k) => (brands.find((b) => b.key === k) || {}).name || k;
   const STATUS = { published: "Publicado", draft: "Borrador", cancelled: "Cancelado" };
@@ -120,8 +136,11 @@
         <label><input type="radio" name="mode" value="presencial" ${ev.mode === "presencial" ? "checked" : ""}>📍 Presencial</label>
         <label><input type="radio" name="mode" value="online" ${ev.mode === "online" ? "checked" : ""}>💻 En línea</label>
       </div></label>
-    <label>Inicio<input name="start_local" type="datetime-local" required value="${esc(ev.start_local)}"></label>
-    <label>Fin <span class="muted">(opcional, 2 h por defecto)</span><input name="end_local" type="datetime-local" value="${esc(ev.end_local)}"></label>
+    <label>Fecha<input name="start_date" type="date" required value="${esc((ev.start_local || "").slice(0, 10))}"></label>
+    <div class="grid" style="gap:0 10px">
+      <label>Empieza<select name="start_time" required>${timeOptions((ev.start_local || "").slice(11, 16) || "19:00")}</select></label>
+      <label>Termina<select name="end_time">${timeOptions((ev.end_local || "").slice(11, 16), true)}</select></label>
+    </div>
     <label>Zona horaria<select name="timezone">${tzs.map((t) => `<option ${t === ev.timezone ? "selected" : ""}>${esc(t)}</option>`).join("")}</select></label>
     <label>Cupo <span class="muted">(vacío = sin límite)</span><input name="capacity" type="number" min="1" value="${esc(ev.capacity ?? "")}"></label>
   </div>
@@ -160,6 +179,18 @@
       btn.disabled = true;
       try {
         const body = Object.fromEntries(new FormData(f));
+        if (!body.start_date) throw new Error("Elige la fecha del evento");
+        body.start_local = `${body.start_date}T${body.start_time}`;
+        if (body.end_time) {
+          // Si termina "antes" de empezar, es que cruza la medianoche.
+          let endDate = body.start_date;
+          if (body.end_time <= body.start_time) {
+            const d = new Date(`${body.start_date}T00:00:00Z`);
+            d.setUTCDate(d.getUTCDate() + 1);
+            endDate = d.toISOString().slice(0, 10);
+          }
+          body.end_local = `${endDate}T${body.end_time}`;
+        } else body.end_local = "";
         const { event } = await api(id ? `/api/events/${id}` : "/api/events", { method: id ? "PUT" : "POST", body });
         location.hash = `#/event/${event.id}`;
       } catch (err) { msg.textContent = err.message; btn.disabled = false; }
