@@ -55,7 +55,7 @@ ${ev.cover_url ? `<img class="cover" src="${escapeHtml(ev.cover_url)}" alt="">` 
     brand, body,
     title: ev.title,
     description: `${fmtDate(ev.start_at, ev.timezone)} · ${ev.description || brand.tagline}`,
-    image: ev.cover_url,
+    image: ev.cover_url.startsWith("/") ? `${origin(request)}${ev.cover_url}` : ev.cover_url, // og:image debe ser absoluta
     url: `${origin(request)}/e/${ev.slug}`,
     scripts: ["/assets/register.js"],
   });

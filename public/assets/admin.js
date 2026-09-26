@@ -155,7 +155,16 @@
   </fieldset>
   <label>Descripción<textarea name="description" maxlength="5000">${esc(ev.description)}</textarea></label>
   <div class="grid">
-    <label>Imagen de portada (URL)<input name="cover_url" type="url" value="${esc(ev.cover_url)}" placeholder="https://…"></label>
+    <div class="full cover-field">
+      <span class="lbl">Imagen de portada</span>
+      <img id="cover-prev" alt="" ${ev.cover_url ? `src="${esc(ev.cover_url)}"` : "hidden"}>
+      <div class="btns">
+        <label class="btn sm ghost upl">📷 Subir imagen<input type="file" id="cover-file" accept="image/jpeg,image/png,image/webp" hidden></label>
+        <button type="button" class="btn sm ghost" id="cover-del" ${ev.cover_url ? "" : "hidden"}>Quitar</button>
+      </div>
+      <input name="cover_url" type="text" value="${esc(ev.cover_url)}" placeholder="…o pega una URL https://" autocomplete="off">
+      <p class="small muted cover-msg"></p>
+    </div>
     <label>Dirección web <span class="muted">(/e/…)</span><input name="slug" maxlength="60" value="${esc(ev.slug)}" placeholder="se genera del título"></label>
   </div>
   ${id && ev.registered ? '<p class="small muted">Si cambias la fecha, los registrados recibirán de nuevo los recordatorios con la hora nueva.</p>' : ""}
@@ -171,6 +180,7 @@
     };
     f.querySelectorAll('input[name="mode"]').forEach((r) => r.addEventListener("change", sync));
     sync();
+    wireCover(f);
     f.onsubmit = async (e) => {
       e.preventDefault();
       const msg = f.querySelector(".msg");
@@ -201,6 +211,61 @@
       await api(`/api/events/${id}`, { method: "DELETE" });
       location.hash = "#/";
     };
+  }
+
+  // ─── Portada: se reduce en el navegador y se sube a /api/images ───
+  function shrinkImage(file, maxW = 1600) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxW / img.width);
+        const c = document.createElement("canvas");
+        c.width = Math.round(img.width * scale);
+        c.height = Math.round(img.height * scale);
+        const ctx = c.getContext("2d");
+        ctx.fillStyle = "#fff"; // PNG con transparencia → fondo blanco en JPEG
+        ctx.fillRect(0, 0, c.width, c.height);
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        const tryQ = (q) => c.toBlob((b) => {
+          if (!b) return reject(new Error("No se pudo procesar la imagen"));
+          if (b.size > 900 * 1024 && q > 0.5) return tryQ(q - 0.1);
+          resolve(b);
+        }, "image/jpeg", q);
+        tryQ(0.82);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Ese archivo no es una imagen válida")); };
+      img.src = url;
+    });
+  }
+
+  function wireCover(f) {
+    const file = document.getElementById("cover-file");
+    const prev = document.getElementById("cover-prev");
+    const del = document.getElementById("cover-del");
+    const msg = f.querySelector(".cover-msg");
+    const set = (url) => {
+      f.cover_url.value = url;
+      prev.hidden = !url; del.hidden = !url;
+      if (url) prev.src = url; else prev.removeAttribute("src");
+    };
+    file.onchange = async () => {
+      const src = file.files[0];
+      if (!src) return;
+      msg.textContent = "Subiendo…";
+      try {
+        const blob = await shrinkImage(src);
+        const r = await fetch("/api/images", { method: "POST", headers: { "Content-Type": "image/jpeg", Authorization: `Bearer ${store.get()}` }, body: blob });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(d.error || "No se pudo subir");
+        set(d.url);
+        msg.textContent = `Listo (${Math.round(blob.size / 1024)} KB).`;
+      } catch (e) { msg.textContent = e.message; }
+      file.value = "";
+    };
+    del.onclick = () => { set(""); msg.textContent = ""; };
+    f.cover_url.oninput = () => { const v = f.cover_url.value.trim(); prev.hidden = !v; del.hidden = !v; if (v) prev.src = v; };
   }
 
   // ─── Detalle / registrados ──────────────────────────────

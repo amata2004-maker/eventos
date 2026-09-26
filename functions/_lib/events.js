@@ -30,7 +30,11 @@ export function parseEventInput(b) {
   const meeting_url = clip(b.meeting_url, 500);
   const maps_url = clip(b.maps_url, 500);
   const cover_url = clip(b.cover_url, 500);
-  for (const [k, v] of [["enlace de la reunión", meeting_url], ["enlace del mapa", maps_url], ["imagen de portada", cover_url]]) {
+  // Portada: URL https externa o imagen subida al panel (/img/<id>).
+  if (cover_url && !isHttpsUrl(cover_url) && !/^\/img\/[A-Za-z0-9_-]{8,32}$/.test(cover_url)) {
+    return { error: "La imagen de portada no es válida" };
+  }
+  for (const [k, v] of [["enlace de la reunión", meeting_url], ["enlace del mapa", maps_url]]) {
     if (v && !isHttpsUrl(v)) return { error: `El ${k} debe empezar con https://` };
   }
   if (mode === "online" && !meeting_url) return { error: "Para un evento en línea agrega el enlace de Zoom/Meet" };

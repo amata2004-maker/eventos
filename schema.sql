@@ -59,3 +59,15 @@ CREATE TABLE IF NOT EXISTS registrations (
 );
 CREATE INDEX IF NOT EXISTS idx_reg_event ON registrations(event_id);
 CREATE INDEX IF NOT EXISTS idx_reg_ip    ON registrations(ip_hash, created_at);
+
+-- Portadas subidas desde el panel. Se reducen en el navegador (≤1600 px, JPEG)
+-- antes de subir, así que pesan ~100–400 KB y caben en una fila de D1 (límite 2 MB).
+CREATE TABLE IF NOT EXISTS images (
+  id            TEXT PRIMARY KEY,
+  organizer_id  TEXT NOT NULL REFERENCES organizers(id),
+  mime          TEXT NOT NULL,
+  size          INTEGER NOT NULL,
+  data          BLOB NOT NULL,
+  created_at    TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_images_org ON images(organizer_id, created_at);
